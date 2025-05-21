@@ -8,6 +8,8 @@ public class PlayerController : MonoBehaviour
     public Vector3 moveDirection;
     private AudioSource audioSource;
 
+    private Inventory inventory;
+
     [Header("玩家数值")]
     [Tooltip("移动速度")]public float walkSpeed;
     [Tooltip("奔跑速度")]public float runSpeed;
@@ -58,6 +60,7 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         characterController = GetComponent<CharacterController>();
+        inventory = GetComponentInChildren<Inventory>();
         audioSource = GetComponent<AudioSource>();
         walkSpeed = 4f;
         runSpeed = 6f;
@@ -275,6 +278,16 @@ public class PlayerController : MonoBehaviour
                 }
             }
         }
+    }
+    public void PickUpWeapon(int itemID,GameObject weapon){
+        if(inventory.weapons.Contains(weapon)){
+            weapon.GetComponent<Weapon_AutomaticGun>().bulletLeft = weapon.GetComponent<Weapon_AutomaticGun>().bulletMag * 5;
+            weapon.GetComponent<Weapon_AutomaticGun>().UpdateAmmoUI();
+            Debug.Log("背包中已存在该武器，补充子弹。");
+            return;
+        }
+        Debug.Log("捡起了武器。");
+        inventory.AddWeapon(weapon);
     }
     public enum PlayerState{
         Idle,

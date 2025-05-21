@@ -45,11 +45,18 @@ public class Weapon_AutomaticGun : weapon
     [Tooltip("当前子弹数")]public int currentBullets;
     [Tooltip("备弹")]public int bulletLeft;
     public bool isSilencer; //是否装备消音器
+    private int shotFragment = 8;
     
     [Header("键位设置")]
     [SerializeField][Tooltip("查看武器按键")]private KeyCode lookWeaponKey = KeyCode.I;
     [SerializeField][Tooltip("填装子弹按键")] private KeyCode reloadInputName = KeyCode.R;
     [SerializeField][Tooltip("自动半自动切换按键")] private KeyCode GunShootModelInput=KeyCode.X;
+
+    [Header("狙击镜设置")]
+    [Tooltip("狙击镜材质")]public Material scopeRenderMaterial;
+    [Tooltip("当没有进行瞄准时狙击镜的颜色")]public Color fadeColor;
+    [Tooltip("当瞄准时狙击镜的颜色")]public Color defaultColor;
+
 
     [Header("特效")]
     public Light muzzleflashLight;
@@ -86,7 +93,7 @@ public class Weapon_AutomaticGun : weapon
     private Animator anim;
     
     public PlayerController.PlayerState state;
-    private bool isReloading = false;
+    public bool isReloading = false;
     public bool isAiming = false;
 
     private Vector3 sniperingFiflePosition;
@@ -185,6 +192,12 @@ public class Weapon_AutomaticGun : weapon
 
         if(GunShootInput)
         {
+            if(IS_SEMIGUN && gameObject.name == "4"){
+                shotFragment = 8;
+            }
+            else{
+                shotFragment = 1;
+            }
             GunFire();
         }
         if(Input.GetKeyDown(lookWeaponKey))
@@ -195,12 +208,26 @@ public class Weapon_AutomaticGun : weapon
         anim.SetBool("Walk",playerController.isWalk);
         
         AnimatorStateInfo info = anim.GetCurrentAnimatorStateInfo(0);
-        if(info.IsName("reload_ammo_left") || info.IsName("reload_out_of_ammo")){
+        if(info.IsName("reload_ammo_left") || info.IsName("reload_out_of_ammo")
+            || info.IsName("reload_open") || info.IsName("reload_close") || info.IsName("reload_insert")
+            || info.IsName("reload_insert1")|| info.IsName("reload_insert2")|| info.IsName("reload_insert3")
+            || info.IsName("reload_insert4")|| info.IsName("reload_insert5")){
             isReloading = true;
         }
         else{
             isReloading = false;
         }
+        if((info.IsName("reload_insert1") ||
+            info.IsName ("reload_insert2") ||
+            info.IsName ("reload_insert3") ||
+            info.IsName ("reload_insert4") ||
+            info.IsName ("reload_insert5") ||
+            info.IsName ("reload_insert") ) && currentBullets == bulletMag)
+        {
+            anim.Play("reload_close");
+            isReloading = false;
+        }
+
 
         if(Input.GetKeyDown(reloadInputName)&&currentBullets < bulletMag&&bulletLeft > 0 && !isReloading){
             // Reload();
@@ -244,15 +271,24 @@ public class Weapon_AutomaticGun : weapon
             anim.Play("aim_fire",0,0);
         }
 
-        RaycastHit hit;
-        Vector3 shootDirection = shootPoint.forward;//射击向前方射击
-        shootDirection = shootDirection + shootPoint.TransformDirection(new Vector3(Random.Range(-SpreadFactor,SpreadFactor),Random.Range(-SpreadFactor,SpreadFactor)));
-        if (Physics.Raycast(shootPoint.position,shootDirection,out hit,range))
-        {
-            Transform bullet = Instantiate(bulletPrefab,bulletShootPoint.transform.position,bulletShootPoint.transform.rotation);
-            bullet.GetComponent<Rigidbody>().velocity = (bullet.transform.forward + shootDirection) * bulletForce;
-            Debug.Log(hit.transform.gameObject.name+"打到了");
+        for(int i = 0; i < shotFragment; i++){
+            RaycastHit hit;
+            Vector3 shootDirection = shootPoint.forward;//射击向前方射击
+            shootDirection = shootDirection + shootPoint.TransformDirection(new Vector3(Random.Range(-SpreadFactor,SpreadFactor),Random.Range(-SpreadFactor,SpreadFactor)));
+            if (Physics.Raycast(shootPoint.position,shootDirection,out hit,range))
+            {
+                Transform bullet;
+                if(IS_AUTORIFLE || (IS_SEMIGUN && gameObject.name == "2")){
+                    bullet = Instantiate(bulletPrefab,bulletShootPoint.transform.position,bulletShootPoint.transform.rotation);
+                }
+                else{
+                    bullet = Instantiate(bulletPrefab,hit.point,Quaternion.FromToRotation(Vector3.forward,hit.normal));
+                }
+                bullet.GetComponent<Rigidbody>().velocity = (bullet.transform.forward + shootDirection) * bulletForce;
+                Debug.Log(hit.transform.gameObject.name+"打到了");
+            }
         }
+        
         Instantiate(casingPrefab,CasingBulletSpawnPoint.transform.position,CasingBulletSpawnPoint.transform.rotation);
         mainAudioSource.clip = isSilencer? silencerShootSound:shootSound;
         mainAudioSource.Play(); //播放射击音效
@@ -263,19 +299,43 @@ public class Weapon_AutomaticGun : weapon
 
     public override void DoReloadAnimation()
     {
-        if (currentBullets > 0 && bulletLeft > 0)
-        {
-            anim.Play("reload_ammo_left",0,0);
-            Reload();
-            mainAudioSource.clip = reloadSoundAmmotLeft;
-            mainAudioSource.Play();
+        if(!(IS_SEMIGUN &&(gameObject.name == "4" || gameObject.name == "5"))){
+            if (currentBullets > 0 && bulletLeft > 0)
+            {
+                anim.Play("reload_ammo_left",0,0);
+                Reload();
+                mainAudioSource.clip = reloadSoundAmmotLeft;
+                mainAudioSource.Play();
+            }
+            if (currentBullets == 0 && bulletLeft > 0)
+            {
+                anim.Play("reload_out_of_ammo",0,0);
+                Reload();
+                mainAudioSource.clip = reloadSoundOutOfAmmo;
+                mainAudioSource.Play();
+            }
         }
-        if (currentBullets == 0 && bulletLeft > 0)
-        {
-            anim.Play("reload_out_of_ammo",0,0);
-            Reload();
-            mainAudioSource.clip = reloadSoundOutOfAmmo;
-            mainAudioSource.Play();
+        else{
+            if(currentBullets == bulletMag){
+                return;
+            }
+            anim.SetTrigger("shotgun_reload");
+        }
+        
+    }
+
+    public void ShotgunReload(){
+        if(currentBullets < bulletMag){
+            currentBullets++;
+            bulletLeft--;
+            UpdateAmmoUI();
+        }
+        else{
+            anim.Play("reload_close",0,0);
+            return;
+        }
+        if(bulletLeft <= 0){
+            return;
         }
     }
 
@@ -309,6 +369,11 @@ public class Weapon_AutomaticGun : weapon
             crossQuarterImgs[i].gameObject.SetActive(false);
         }
 
+        if(IS_SEMIGUN &&gameObject.name == "5"){
+            scopeRenderMaterial.color = defaultColor;
+            gunCamera.fieldOfView = 15;
+        }
+
         mainCamera.fieldOfView = Mathf.SmoothDamp(30,60,ref currentVelocity,0.1f);
         mainAudioSource.clip = aimSound;
         mainAudioSource.Play();
@@ -321,6 +386,11 @@ public class Weapon_AutomaticGun : weapon
         {
             crossQuarterImgs[i].gameObject.SetActive(true);
         }
+        if(IS_SEMIGUN &&gameObject.name == "5"){
+            scopeRenderMaterial.color = fadeColor;
+            gunCamera.fieldOfView = 35;
+        }
+
         mainCamera.fieldOfView = Mathf.SmoothDamp(60,30,ref currentVelocity,0.1f);
         mainAudioSource.clip = aimSound;
         mainAudioSource.Play();
