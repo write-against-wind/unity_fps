@@ -8,7 +8,7 @@ ModelImporter:
     materialImportMode: 2
     materialName: 0
     materialSearch: 1
-    materialLocation: 1
+    materialLocation: 0
   animations:
     legacyGenerateAnimations: 4
     bakeSimulation: 0
@@ -81,6 +81,7 @@ ModelImporter:
   - 35284bd486e06a94c816da8bc8e660de
   - 48fa38963fb5a2e419e0840d03cba654
   - 77b1ab5201f195f4facd3240836104ca
+  - 8d75eb754141aef488f6414dc80bc471
   - 0c3ab2329af47e84a8497781e53163a5
   importAnimation: 1
   humanDescription:

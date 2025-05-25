@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;  // 添加UI命名空间引用
 
 public class PlayerController : MonoBehaviour
 {
@@ -14,6 +15,7 @@ public class PlayerController : MonoBehaviour
     [Tooltip("移动速度")]public float walkSpeed;
     [Tooltip("奔跑速度")]public float runSpeed;
     [Tooltip("下蹲行走速度")]public float crouchSpeed;
+    [Tooltip("玩家血量")]public float playerHealth;
 
     [Tooltip("跳跃力")]public float jumpForce;
     [Tooltip("重力")]public float fallForce;
@@ -34,8 +36,11 @@ public class PlayerController : MonoBehaviour
     [Tooltip("是否在跳跃")]public bool isJumping;
     [Tooltip("是否在行走")]public bool isWalk;
     [Tooltip("是否在地面")]public bool isGround = true;
+    [Tooltip("是否死亡")]private bool playerisDead;
+    [Tooltip("是否收到伤害")]private bool isDamage;
     // 垂直速度
     private float verticalVelocity = 0f;
+    public Text playerHealthUI;
 
     [Header("音效")]
     [Tooltip("行走声")]public AudioClip walkSound;
@@ -67,7 +72,7 @@ public class PlayerController : MonoBehaviour
         crouchSpeed = 2f;
         fallForce = 20f;  // 设置重力值
         jumpForce = 8f;   // 设置跳跃力
-        
+        playerHealth = 100f;
         // 保存原始高度和中心点
         originalHeight = characterController.height;
         originalCenter = characterController.center;
@@ -84,6 +89,7 @@ public class PlayerController : MonoBehaviour
                 playerCamera = mainCamera.transform;
             }
         }
+        playerHealthUI.text = "生命值：" + playerHealth;
     }
 
     // Update is called once per frame
@@ -288,6 +294,16 @@ public class PlayerController : MonoBehaviour
         }
         Debug.Log("捡起了武器。");
         inventory.AddWeapon(weapon);
+    }
+    public void PlayerHealth(float damage){
+        playerHealth -= damage;
+        isDamage = true;
+        playerHealthUI.text="生命值："+playerHealth;
+        if(playerHealth <=0){
+            playerisDead =true;
+            playerHealthUI.text="玩家死亡";
+            Time.timeScale=0;
+        }
     }
     public enum PlayerState{
         Idle,

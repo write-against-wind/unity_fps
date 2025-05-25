@@ -46,6 +46,8 @@ public class Weapon_AutomaticGun : weapon
     [Tooltip("备弹")]public int bulletLeft;
     public bool isSilencer; //是否装备消音器
     private int shotFragment = 8;
+    public float minDamage;
+    public float maxDamage;
     
     [Header("键位设置")]
     [SerializeField][Tooltip("查看武器按键")]private KeyCode lookWeaponKey = KeyCode.I;
@@ -285,6 +287,11 @@ public class Weapon_AutomaticGun : weapon
                     bullet = Instantiate(bulletPrefab,hit.point,Quaternion.FromToRotation(Vector3.forward,hit.normal));
                 }
                 bullet.GetComponent<Rigidbody>().velocity = (bullet.transform.forward + shootDirection) * bulletForce;
+                //击中敌人时做的判断
+                if(hit.transform.gameObject.transform.tag == "Enemy")
+                {
+                    hit.transform.gameObject.GetComponent<Enemy>().Health(Random.Range(minDamage,maxDamage));//随机伤害
+                }
                 Debug.Log(hit.transform.gameObject.name+"打到了");
             }
         }
