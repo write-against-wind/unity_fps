@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;  // 添加UI命名空间引用
+using UnityEngine.XR;  // 添加XR命名空间
+using UnityEngine.XR.Interaction.Toolkit;  // 添加XR Interaction Toolkit命名空间
 
 public class PlayerController : MonoBehaviour
 {
@@ -61,6 +63,14 @@ public class PlayerController : MonoBehaviour
     private Vector3 originalCenter;
     private bool canStand = true;
     
+    [Header("VR控制器")]
+    [Tooltip("左手控制器")] public XRController leftController;
+    [Tooltip("右手控制器")] public XRController rightController;
+    
+    // VR按钮状态跟踪（避免连续触发）
+    private bool wasLeftAButtonPressed = false;
+    private bool wasRightXButtonPressed = false;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -89,6 +99,39 @@ public class PlayerController : MonoBehaviour
                 playerCamera = mainCamera.transform;
             }
         }
+        
+        // 自动查找VR控制器（如果没有手动设置）
+        if (leftController == null || rightController == null)
+        {
+            Debug.Log("开始自动查找VR控制器...");
+            
+            // 方法1：通过XRController组件查找
+            XRController[] controllers = FindObjectsOfType<XRController>();
+            Debug.Log($"找到的XRController组件数量: {controllers.Length}");
+            
+            foreach (XRController controller in controllers)
+            {
+                Debug.Log($"检查控制器: {controller.name}, Node: {controller.controllerNode}");
+                if (controller.controllerNode == XRNode.LeftHand && leftController == null)
+                {
+                    leftController = controller;
+                    Debug.Log("找到左手控制器: " + controller.name);
+                }
+                else if (controller.controllerNode == XRNode.RightHand && rightController == null)
+                {
+                    rightController = controller;
+                    Debug.Log("找到右手控制器: " + controller.name);
+                }
+            }
+            
+            // 方法2：如果没找到XRController组件，直接使用InputDevice
+            if (leftController == null || rightController == null)
+            {
+                Debug.Log("未找到XRController组件，尝试直接使用InputDevice...");
+                StartCoroutine(FindVRDevices());
+            }
+        }
+        
         playerHealthUI.text = "生命值：" + playerHealth;
     }
 
@@ -125,13 +168,33 @@ public class PlayerController : MonoBehaviour
         // 检查头顶是否有障碍物
         canStand = !CheckHeadObstacle();
         
+        // 获取VR控制器下蹲输入 - 左手A键 - 添加调试信息
+        bool leftAButtonPressed = false;
+        if (leftController != null)
+        {
+            // 尝试不同的按钮映射
+            bool primaryButton = false;
+            bool secondaryButton = false;
+            
+            leftController.inputDevice.TryGetFeatureValue(CommonUsages.primaryButton, out primaryButton);
+            leftController.inputDevice.TryGetFeatureValue(CommonUsages.secondaryButton, out secondaryButton);
+            
+            leftAButtonPressed = primaryButton;
+            
+            // 调试信息
+            if (primaryButton || secondaryButton)
+            {
+                Debug.Log($"左手按钮状态 - Primary(X): {primaryButton}, Secondary(Y): {secondaryButton}");
+            }
+        }
+        
         // 检测下蹲输入
-        if (Input.GetKey(crouchKey) && isGround && !isJumping)
+        if (leftAButtonPressed && isGround && !isJumping)
         {
             isCrouching = true;
             playerState = PlayerState.Crouching;
         }
-        else if (canStand && !Input.GetKey(crouchKey))
+        else if (canStand && !leftAButtonPressed)
         {
             // 没有障碍物且没有按下下蹲键，恢复站立
             isCrouching = false;
@@ -222,11 +285,38 @@ public class PlayerController : MonoBehaviour
     }
     
     public void Moving(){
-        //急停
-        float moveX = Input.GetAxisRaw("Horizontal");
-        float moveZ = Input.GetAxisRaw("Vertical");
-        isRunning = Input.GetKey(runKey);
-        isWalk = (Mathf.Abs(moveX) > 0 || Mathf.Abs(moveZ) > 0)?true:false;
+        // 获取左手摇杆输入
+        Vector2 leftStickInput = Vector2.zero;
+        if (leftController != null)
+        {
+            leftController.inputDevice.TryGetFeatureValue(CommonUsages.primary2DAxis, out leftStickInput);
+        }
+
+        float moveX = leftStickInput.x;
+        float moveZ = leftStickInput.y;
+        
+        // 用右手控制器Y键控制奔跑 - 添加调试信息
+        bool runButtonPressed = false;
+        if (rightController != null)
+        {
+            // 尝试不同的按钮映射
+            bool primaryButton = false;
+            bool secondaryButton = false;
+            
+            rightController.inputDevice.TryGetFeatureValue(CommonUsages.primaryButton, out primaryButton);
+            rightController.inputDevice.TryGetFeatureValue(CommonUsages.secondaryButton, out secondaryButton);
+            
+            runButtonPressed = primaryButton;
+            
+            // 调试信息
+            if (primaryButton || secondaryButton)
+            {
+                Debug.Log($"右手按钮状态 - Primary(A): {primaryButton}, Secondary(B): {secondaryButton}");
+            }
+        }
+        isRunning = runButtonPressed;
+        
+        isWalk = (Mathf.Abs(moveX) > 0.1f || Mathf.Abs(moveZ) > 0.1f) ? true : false;
         
         // 根据状态设置速度
         if(isCrouching && isWalk)
@@ -261,15 +351,40 @@ public class PlayerController : MonoBehaviour
     }
     
     public void Jump(){
+        // 获取VR控制器跳跃输入 - 右手X键 - 添加调试信息
+        bool rightXButtonPressed = false;
+        if (rightController != null)
+        {
+            // 尝试不同的按钮映射
+            bool primaryButton = false;
+            bool secondaryButton = false;
+            
+            rightController.inputDevice.TryGetFeatureValue(CommonUsages.primaryButton, out primaryButton);
+            rightController.inputDevice.TryGetFeatureValue(CommonUsages.secondaryButton, out secondaryButton);
+            
+            rightXButtonPressed = secondaryButton; // 使用secondary作为X键
+            
+            // 调试信息
+            if (primaryButton || secondaryButton)
+            {
+                Debug.Log($"右手跳跃按钮状态 - Primary(A): {primaryButton}, Secondary(B): {secondaryButton}");
+            }
+        }
+        
         // 检测跳跃输入 - 下蹲时不能跳跃
-        if(Input.GetKeyDown(jumpKey) && isGround && !isCrouching){
+        if(rightXButtonPressed && !wasRightXButtonPressed && isGround && !isCrouching){
             // 设置跳跃状态
             playerState = PlayerState.Jumping;
             isJumping = true;
             
             // 应用跳跃力
             verticalVelocity = jumpForce;
+            
+            Debug.Log("跳跃触发！");
         }
+        
+        // 更新按钮状态
+        wasRightXButtonPressed = rightXButtonPressed;
         
         // 如果不在地面上，说明可能在跳跃或下落
         if(!isGround){
@@ -312,4 +427,36 @@ public class PlayerController : MonoBehaviour
         Crouching,
         Jumping
     }
+
+    // 添加协程来查找VR设备
+    IEnumerator FindVRDevices()
+    {
+        yield return new WaitForSeconds(2f); // 等待VR系统初始化
+        
+        var leftDevices = new List<InputDevice>();
+        var rightDevices = new List<InputDevice>();
+        
+        InputDevices.GetDevicesAtXRNode(XRNode.LeftHand, leftDevices);
+        InputDevices.GetDevicesAtXRNode(XRNode.RightHand, rightDevices);
+        
+        Debug.Log($"通过XRNode找到的左手设备数量: {leftDevices.Count}");
+        Debug.Log($"通过XRNode找到的右手设备数量: {rightDevices.Count}");
+        
+        // 如果找到了设备但没有XRController组件，创建一个临时的引用
+        if (leftDevices.Count > 0)
+        {
+            leftInputDevice = leftDevices[0];
+            Debug.Log($"设置左手InputDevice: {leftInputDevice.name}");
+        }
+        
+        if (rightDevices.Count > 0)
+        {
+            rightInputDevice = rightDevices[0];
+            Debug.Log($"设置右手InputDevice: {rightInputDevice.name}");
+        }
+    }
+    
+    // 添加InputDevice变量作为备用
+    private InputDevice leftInputDevice;
+    private InputDevice rightInputDevice;
 }
