@@ -8602,7 +8602,7 @@ PrefabInstance:
     - target: {fileID: 6598815579406187037, guid: 18ddb545287c546e19cc77dc9fbb2189,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -22557,8 +22557,6 @@ MonoBehaviour:
   isReloading: 0
   isAiming: 0
   sniperingFifleOnPosition: {x: 0, y: 0, z: 0}
-  leftController: {fileID: 0}
-  rightController: {fileID: 0}
 --- !u!1 &4441848305824439954
 GameObject:
   m_ObjectHideFlags: 0

@@ -5,6 +5,8 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.XR;  // 添加XR命名空间
 using UnityEngine.XR.Interaction.Toolkit;  // 添加XR Interaction Toolkit命名空间
+using UnityEngine.InputSystem;
+using Unity.XR.CoreUtils;
 
 // // 武器音效内部类
 // [System.Serializable]
@@ -104,9 +106,9 @@ public class Weapon_AutomaticGun : weapon
     public Vector3 sniperingFifleOnPosition;
 
     [Header("VR控制器")]
-    [Tooltip("左手控制器")] public XRController leftController;
-    [Tooltip("右手控制器")] public XRController rightController;
-    
+    private XRBaseController leftController;
+    private XRBaseController rightController;
+    private XROrigin xrOrigin;  // 使用 XROrigin 而不是 XROriginBase
     // VR扳机状态跟踪
     private bool wasLeftTriggerPressed = false;
 
@@ -115,6 +117,37 @@ public class Weapon_AutomaticGun : weapon
         playerController = GetComponentInParent<PlayerController>();
         mainAudioSource = GetComponent<AudioSource>();
         mainCamera = Camera.main;
+        
+        // 首先找到XR Origin
+        xrOrigin = FindObjectOfType<XROrigin>();
+        if (xrOrigin != null)
+        {
+            // 在XR Origin的子物体中查找控制器
+            var allControllers = xrOrigin.GetComponentsInChildren<XRBaseController>();
+            foreach (var controller in allControllers)
+            {
+                if (controller.name.ToLower().Contains("left"))
+                {
+                    leftController = controller;
+                    Debug.Log("找到左手控制器: " + controller.name);
+                }
+                else if (controller.name.ToLower().Contains("right"))
+                {
+                    rightController = controller;
+                    Debug.Log("找到右手控制器: " + controller.name);
+                }
+            }
+        }
+
+        // 如果还是没有找到控制器，输出详细警告
+        if (leftController == null)
+        {
+            Debug.LogWarning("未找到左手控制器！请确保场景中存在XR Origin并且包含Controller组件。");
+        }
+        if (rightController == null)
+        {
+            Debug.LogWarning("未找到右手控制器！请确保场景中存在XR Origin并且包含Controller组件。");
+        }
     }
 
     private void Start()
@@ -147,25 +180,6 @@ public class Weapon_AutomaticGun : weapon
             shootingMode = ShootMode.SemiGun;
             UpdateAmmoUI();
         }
-        
-        // 自动查找VR控制器（如果没有手动设置）
-        if (leftController == null || rightController == null)
-        {
-            XRController[] controllers = FindObjectsOfType<XRController>();
-            foreach (XRController controller in controllers)
-            {
-                if (controller.name.ToLower().Contains("left") && leftController == null)
-                {
-                    leftController = controller;
-                    Debug.Log("武器脚本自动找到左手控制器: " + controller.name);
-                }
-                else if (controller.name.ToLower().Contains("right") && rightController == null)
-                {
-                    rightController = controller;
-                    Debug.Log("武器脚本自动找到右手控制器: " + controller.name);
-                }
-            }
-        }
     }
     
     private void Update()
@@ -176,12 +190,20 @@ public class Weapon_AutomaticGun : weapon
         
         if (leftController != null)
         {
-            leftController.inputDevice.TryGetFeatureValue(CommonUsages.triggerButton, out leftTriggerPressed);
+            var actionBasedController = leftController.GetComponent<ActionBasedController>();
+            if (actionBasedController != null && actionBasedController.activateAction.action != null)
+            {
+                leftTriggerPressed = actionBasedController.activateAction.action.ReadValue<float>() > 0.5f;
+            }
         }
         
         if (rightController != null)
         {
-            rightController.inputDevice.TryGetFeatureValue(CommonUsages.triggerButton, out rightTriggerPressed);
+            var actionBasedController = rightController.GetComponent<ActionBasedController>();
+            if (actionBasedController != null && actionBasedController.activateAction.action != null)
+            {
+                rightTriggerPressed = actionBasedController.activateAction.action.ReadValue<float>() > 0.5f;
+            }
         }
 
         //自动枪械VR输入方式
@@ -195,10 +217,10 @@ public class Weapon_AutomaticGun : weapon
                 shootingMode = ShootMode.AutoRifle;
                 UpdateAmmoUI();
             }
-
-            else if (Input.GetKeyDown(GunShootModelInput) && modeNum != 0) {
+            else if (Input.GetKeyDown(GunShootModelInput) && modeNum != 0)
+            {
                 modeNum = 0;
-                shootModeName="Semi Automatic";
+                shootModeName = "Semi Automatic";
                 shootingMode = ShootMode.SemiGun;
                 UpdateAmmoUI();
             }
@@ -207,38 +229,25 @@ public class Weapon_AutomaticGun : weapon
             switch (shootingMode)
             {
                 case ShootMode.AutoRifle:
-                    GunShootInput = leftTriggerPressed; // 左手扳机持续按住射击
+                    // 全自动模式：持续按住扳机即可射击
+                    GunShootInput = leftTriggerPressed;
                     fireRate = originRate;
                     break;
                 case ShootMode.SemiGun:
-                    // 对于半自动模式，需要检测扳机按下的瞬间
-                    bool leftTriggerDown = false;
-                    if (leftController != null)
-                    {
-                        float triggerValue;
-                        leftController.inputDevice.TryGetFeatureValue(CommonUsages.trigger, out triggerValue);
-                        // 使用阈值检测来模拟按键按下瞬间
-                        leftTriggerDown = triggerValue > 0.8f && !wasLeftTriggerPressed;
-                        wasLeftTriggerPressed = triggerValue > 0.8f;
-                    }
-                    GunShootInput = leftTriggerDown;
+                    // 半自动模式：检测扳机按下的瞬间
+                    bool triggerDown = leftTriggerPressed && !wasLeftTriggerPressed;
+                    wasLeftTriggerPressed = leftTriggerPressed;
+                    GunShootInput = triggerDown;
                     fireRate = 0.2f;
                     break;
             }
         }
         else
-
         {
-            // 对于其他武器类型，使用扳机按下瞬间
-            bool leftTriggerDown = false;
-            if (leftController != null)
-            {
-                float triggerValue;
-                leftController.inputDevice.TryGetFeatureValue(CommonUsages.trigger, out triggerValue);
-                leftTriggerDown = triggerValue > 0.8f && !wasLeftTriggerPressed;
-                wasLeftTriggerPressed = triggerValue > 0.8f;
-            }
-            GunShootInput = leftTriggerDown;
+            // 其他武器类型使用扳机按下瞬间
+            bool triggerDown = leftTriggerPressed && !wasLeftTriggerPressed;
+            wasLeftTriggerPressed = leftTriggerPressed;
+            GunShootInput = triggerDown;
         }
 
         state = playerController.playerState;
