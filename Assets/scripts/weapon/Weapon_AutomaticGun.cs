@@ -5,6 +5,11 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.XR;  // 添加XR命名空间
 using UnityEngine.XR.Interaction.Toolkit;  // 添加XR Interaction Toolkit命名空间
+using UnityEngine.InputSystem;
+using Unity.XR.CoreUtils;
+using UnityEngine.XR.Interaction.Toolkit.Inputs;  // 添加输入相关命名空间
+using InputDevice = UnityEngine.XR.InputDevice;  // 明确指定使用XR的InputDevice
+using CommonUsages = UnityEngine.XR.CommonUsages;  // 明确指定使用XR的CommonUsages
 
 // // 武器音效内部类
 // [System.Serializable]
@@ -104,17 +109,57 @@ public class Weapon_AutomaticGun : weapon
     public Vector3 sniperingFifleOnPosition;
 
     [Header("VR控制器")]
-    [Tooltip("左手控制器")] public XRController leftController;
-    [Tooltip("右手控制器")] public XRController rightController;
-    
-    // VR扳机状态跟踪
+    private XRBaseController leftController;
+    private XRBaseController rightController;
+    private XROrigin xrOrigin;
     private bool wasLeftTriggerPressed = false;
+    
+    [Header("VR按键映射")]
+    [SerializeField]
+    public InputActionReference pressAAction;  // 右手A键 - 换弹
+    [SerializeField]
+    public InputActionReference leftXAction;   // 左手X键 - 检视武器
+    [SerializeField]
+    public InputActionReference leftYAction;   // 左手Y键 - 切枪
+    [SerializeField]
+    public InputActionReference rightBAction;  // 右手B键 - 奔跑 (public以便PlayerController访问)
 
     private void Awake()
     {
         playerController = GetComponentInParent<PlayerController>();
         mainAudioSource = GetComponent<AudioSource>();
         mainCamera = Camera.main;
+        
+        // 首先找到XR Origin
+        xrOrigin = FindObjectOfType<XROrigin>();
+        if (xrOrigin != null)
+        {
+            // 在XR Origin的子物体中查找控制器
+            var allControllers = xrOrigin.GetComponentsInChildren<XRBaseController>();
+            foreach (var controller in allControllers)
+            {
+                if (controller.name.ToLower().Contains("left"))
+                {
+                    leftController = controller;
+                    Debug.Log("找到左手控制器: " + controller.name);
+                }
+                else if (controller.name.ToLower().Contains("right"))
+                {
+                    rightController = controller;
+                    Debug.Log("找到右手控制器: " + controller.name);
+                }
+            }
+        }
+
+        // 如果还是没有找到控制器，输出详细警告
+        if (leftController == null)
+        {
+            Debug.LogWarning("未找到左手控制器！请确保场景中存在XR Origin并且包含Controller组件。");
+        }
+        if (rightController == null)
+        {
+            Debug.LogWarning("未找到右手控制器！请确保正确设置。");
+        }
     }
 
     private void Start()
@@ -147,25 +192,6 @@ public class Weapon_AutomaticGun : weapon
             shootingMode = ShootMode.SemiGun;
             UpdateAmmoUI();
         }
-        
-        // 自动查找VR控制器（如果没有手动设置）
-        if (leftController == null || rightController == null)
-        {
-            XRController[] controllers = FindObjectsOfType<XRController>();
-            foreach (XRController controller in controllers)
-            {
-                if (controller.name.ToLower().Contains("left") && leftController == null)
-                {
-                    leftController = controller;
-                    Debug.Log("武器脚本自动找到左手控制器: " + controller.name);
-                }
-                else if (controller.name.ToLower().Contains("right") && rightController == null)
-                {
-                    rightController = controller;
-                    Debug.Log("武器脚本自动找到右手控制器: " + controller.name);
-                }
-            }
-        }
     }
     
     private void Update()
@@ -173,15 +199,48 @@ public class Weapon_AutomaticGun : weapon
         // 获取VR控制器输入
         bool leftTriggerPressed = false;
         bool rightTriggerPressed = false;
+        bool rightButtonAPressed = false;
+        bool leftXPressed = false;
+        bool leftYPressed = false;
+        bool rightBPressed = false;
         
         if (leftController != null)
         {
-            leftController.inputDevice.TryGetFeatureValue(CommonUsages.triggerButton, out leftTriggerPressed);
+            var actionBasedController = leftController.GetComponent<ActionBasedController>();
+            if (actionBasedController != null && actionBasedController.activateAction.action != null)
+            {
+                leftTriggerPressed = actionBasedController.activateAction.action.ReadValue<float>() > 0.5f;
+            }
         }
         
         if (rightController != null)
         {
-            rightController.inputDevice.TryGetFeatureValue(CommonUsages.triggerButton, out rightTriggerPressed);
+            var actionBasedController = rightController.GetComponent<ActionBasedController>();
+            if (actionBasedController != null)
+            {
+                rightTriggerPressed = actionBasedController.activateAction.action.ReadValue<float>() > 0.5f;
+            }
+        }
+
+        // 检测VR按键按压
+        if (pressAAction != null && pressAAction.action != null)
+        {
+            rightButtonAPressed = pressAAction.action.WasPressedThisFrame();
+        }
+        
+        if (leftXAction != null && leftXAction.action != null)
+        {
+            leftXPressed = leftXAction.action.WasPressedThisFrame();
+        }
+        
+        if (leftYAction != null && leftYAction.action != null)
+        {
+            leftYPressed = leftYAction.action.WasPressedThisFrame();
+        }
+        
+        if (rightBAction != null && rightBAction.action != null)
+        {
+            rightBPressed = rightBAction.action.WasPressedThisFrame();
         }
 
         //自动枪械VR输入方式
@@ -195,10 +254,10 @@ public class Weapon_AutomaticGun : weapon
                 shootingMode = ShootMode.AutoRifle;
                 UpdateAmmoUI();
             }
-
-            else if (Input.GetKeyDown(GunShootModelInput) && modeNum != 0) {
+            else if (Input.GetKeyDown(GunShootModelInput) && modeNum != 0)
+            {
                 modeNum = 0;
-                shootModeName="Semi Automatic";
+                shootModeName = "Semi Automatic";
                 shootingMode = ShootMode.SemiGun;
                 UpdateAmmoUI();
             }
@@ -207,38 +266,25 @@ public class Weapon_AutomaticGun : weapon
             switch (shootingMode)
             {
                 case ShootMode.AutoRifle:
-                    GunShootInput = leftTriggerPressed; // 左手扳机持续按住射击
+                    // 全自动模式：持续按住扳机即可射击
+                    GunShootInput = leftTriggerPressed;
                     fireRate = originRate;
                     break;
                 case ShootMode.SemiGun:
-                    // 对于半自动模式，需要检测扳机按下的瞬间
-                    bool leftTriggerDown = false;
-                    if (leftController != null)
-                    {
-                        float triggerValue;
-                        leftController.inputDevice.TryGetFeatureValue(CommonUsages.trigger, out triggerValue);
-                        // 使用阈值检测来模拟按键按下瞬间
-                        leftTriggerDown = triggerValue > 0.8f && !wasLeftTriggerPressed;
-                        wasLeftTriggerPressed = triggerValue > 0.8f;
-                    }
-                    GunShootInput = leftTriggerDown;
+                    // 半自动模式：检测扳机按下的瞬间
+                    bool triggerDown = leftTriggerPressed && !wasLeftTriggerPressed;
+                    wasLeftTriggerPressed = leftTriggerPressed;
+                    GunShootInput = triggerDown;
                     fireRate = 0.2f;
                     break;
             }
         }
         else
-
         {
-            // 对于其他武器类型，使用扳机按下瞬间
-            bool leftTriggerDown = false;
-            if (leftController != null)
-            {
-                float triggerValue;
-                leftController.inputDevice.TryGetFeatureValue(CommonUsages.trigger, out triggerValue);
-                leftTriggerDown = triggerValue > 0.8f && !wasLeftTriggerPressed;
-                wasLeftTriggerPressed = triggerValue > 0.8f;
-            }
-            GunShootInput = leftTriggerDown;
+            // 其他武器类型使用扳机按下瞬间
+            bool triggerDown = leftTriggerPressed && !wasLeftTriggerPressed;
+            wasLeftTriggerPressed = leftTriggerPressed;
+            GunShootInput = triggerDown;
         }
 
         state = playerController.playerState;
@@ -264,9 +310,26 @@ public class Weapon_AutomaticGun : weapon
             }
             GunFire();
         }
-        if(Input.GetKeyDown(lookWeaponKey))
+        // 检视武器 - 左手X键
+        if(leftXPressed || Input.GetKeyDown(lookWeaponKey))
         {
             anim.SetTrigger("Inspect");
+        }
+        
+        // 切枪 - 左手Y键
+        if(leftYPressed)
+        {
+            // 调用库存系统的切枪功能
+            var inventory = GetComponentInParent<Inventory>();
+            if(inventory != null)
+            {
+                int nextWeaponID = (inventory.currentWeaponID + 1) % inventory.weapons.Count;
+                if(nextWeaponID != inventory.currentWeaponID)
+                {
+                    inventory.changeWeapon(nextWeaponID);
+                    Debug.Log("VR手柄切换到武器: " + nextWeaponID);
+                }
+            }
         }
         anim.SetBool("Run",playerController.isRunning);
         anim.SetBool("Walk",playerController.isWalk);
@@ -292,9 +355,12 @@ public class Weapon_AutomaticGun : weapon
             isReloading = false;
         }
 
-
-        if(Input.GetKeyDown(reloadInputName)&&currentBullets < bulletMag&&bulletLeft > 0 && !isReloading){
-            // Reload();
+        // 修改换弹触发逻辑
+        if((rightButtonAPressed || Input.GetKeyDown(reloadInputName)) 
+            && currentBullets < bulletMag 
+            && bulletLeft > 0 
+            && !isReloading)
+        {
             DoReloadAnimation();
         }
 

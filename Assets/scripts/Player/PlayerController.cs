@@ -4,6 +4,11 @@ using UnityEngine;
 using UnityEngine.UI;  // 添加UI命名空间引用
 using UnityEngine.XR;  // 添加XR命名空间
 using UnityEngine.XR.Interaction.Toolkit;  // 添加XR Interaction Toolkit命名空间
+using UnityEngine.InputSystem;  // 添加Input System命名空间
+using UnityEngine.XR.Interaction.Toolkit.Inputs;  // 添加输入相关命名空间
+using XRInputDevice = UnityEngine.XR.InputDevice;  // 明确指定使用XR的InputDevice
+using XRCommonUsages = UnityEngine.XR.CommonUsages;  // 明确指定使用XR的CommonUsages
+
 
 public class PlayerController : MonoBehaviour
 {
@@ -70,6 +75,7 @@ public class PlayerController : MonoBehaviour
     // VR按钮状态跟踪（避免连续触发）
     private bool wasLeftAButtonPressed = false;
     private bool wasRightXButtonPressed = false;
+    private bool wasRightBPressed = false;
 
     // Start is called before the first frame update
     void Start()
@@ -176,8 +182,8 @@ public class PlayerController : MonoBehaviour
             bool primaryButton = false;
             bool secondaryButton = false;
             
-            leftController.inputDevice.TryGetFeatureValue(CommonUsages.primaryButton, out primaryButton);
-            leftController.inputDevice.TryGetFeatureValue(CommonUsages.secondaryButton, out secondaryButton);
+            leftController.inputDevice.TryGetFeatureValue(XRCommonUsages.primaryButton, out primaryButton);
+            leftController.inputDevice.TryGetFeatureValue(XRCommonUsages.secondaryButton, out secondaryButton);
             
             leftAButtonPressed = primaryButton;
             
@@ -289,7 +295,7 @@ public class PlayerController : MonoBehaviour
         Vector2 leftStickInput = Vector2.zero;
         if (leftController != null)
         {
-            leftController.inputDevice.TryGetFeatureValue(CommonUsages.primary2DAxis, out leftStickInput);
+            leftController.inputDevice.TryGetFeatureValue(XRCommonUsages.primary2DAxis, out leftStickInput);
         }
 
         float moveX = leftStickInput.x;
@@ -297,22 +303,18 @@ public class PlayerController : MonoBehaviour
         
         // 用右手控制器Y键控制奔跑 - 添加调试信息
         bool runButtonPressed = false;
-        if (rightController != null)
+        // 通过InputActionReference获取B键状态
+        // 从武器脚本获取B键状态
+        var currentWeapon = GetComponentInChildren<Weapon_AutomaticGun>();
+        if (currentWeapon != null && currentWeapon.rightBAction != null && currentWeapon.rightBAction.action != null)
         {
-            // 尝试不同的按钮映射
-            bool primaryButton = false;
-            bool secondaryButton = false;
-            
-            rightController.inputDevice.TryGetFeatureValue(CommonUsages.primaryButton, out primaryButton);
-            rightController.inputDevice.TryGetFeatureValue(CommonUsages.secondaryButton, out secondaryButton);
-            
-            runButtonPressed = primaryButton;
-            
-            // 调试信息
-            if (primaryButton || secondaryButton)
-            {
-                Debug.Log($"右手按钮状态 - Primary(A): {primaryButton}, Secondary(B): {secondaryButton}");
-            }
+            runButtonPressed = currentWeapon.rightBAction.action.IsPressed();
+        }
+        
+        // 备用方案：使用传统输入
+        if (!runButtonPressed && Input.GetKey(runKey))
+        {
+            runButtonPressed = true;
         }
         isRunning = runButtonPressed;
         
@@ -359,8 +361,8 @@ public class PlayerController : MonoBehaviour
             bool primaryButton = false;
             bool secondaryButton = false;
             
-            rightController.inputDevice.TryGetFeatureValue(CommonUsages.primaryButton, out primaryButton);
-            rightController.inputDevice.TryGetFeatureValue(CommonUsages.secondaryButton, out secondaryButton);
+            rightController.inputDevice.TryGetFeatureValue(XRCommonUsages.primaryButton, out primaryButton);
+            rightController.inputDevice.TryGetFeatureValue(XRCommonUsages.secondaryButton, out secondaryButton);
             
             rightXButtonPressed = secondaryButton; // 使用secondary作为X键
             
@@ -433,8 +435,8 @@ public class PlayerController : MonoBehaviour
     {
         yield return new WaitForSeconds(2f); // 等待VR系统初始化
         
-        var leftDevices = new List<InputDevice>();
-        var rightDevices = new List<InputDevice>();
+        var leftDevices = new List<XRInputDevice>();
+        var rightDevices = new List<XRInputDevice>();
         
         InputDevices.GetDevicesAtXRNode(XRNode.LeftHand, leftDevices);
         InputDevices.GetDevicesAtXRNode(XRNode.RightHand, rightDevices);
@@ -457,6 +459,6 @@ public class PlayerController : MonoBehaviour
     }
     
     // 添加InputDevice变量作为备用
-    private InputDevice leftInputDevice;
-    private InputDevice rightInputDevice;
+    private XRInputDevice leftInputDevice;
+    private XRInputDevice rightInputDevice;
 }

@@ -22,7 +22,7 @@ public class PickUpltem : MonoBehaviour
         if (other.tag == "Player")
         {
             PlayerController player = other.GetComponent<PlayerController>();
-            weaponModel = GameObject.Find("Player/Assult_Rife_Arm/Inventory/").gameObject.transform.GetChild(itemID).gameObject;
+            weaponModel = GameObject.Find("Player/Camera Offset/Assult_Rife_Arm/Inventory/").gameObject.transform.GetChild(itemID).gameObject;
             player.PickUpWeapon(itemID,weaponModel);
             Destroy(gameObject);
         }
