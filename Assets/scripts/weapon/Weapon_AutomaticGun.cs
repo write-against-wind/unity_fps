@@ -7,6 +7,9 @@ using UnityEngine.XR;  // 添加XR命名空间
 using UnityEngine.XR.Interaction.Toolkit;  // 添加XR Interaction Toolkit命名空间
 using UnityEngine.InputSystem;
 using Unity.XR.CoreUtils;
+using UnityEngine.XR.Interaction.Toolkit.Inputs;  // 添加输入相关命名空间
+using InputDevice = UnityEngine.XR.InputDevice;  // 明确指定使用XR的InputDevice
+using CommonUsages = UnityEngine.XR.CommonUsages;  // 明确指定使用XR的CommonUsages
 
 // // 武器音效内部类
 // [System.Serializable]
@@ -108,9 +111,10 @@ public class Weapon_AutomaticGun : weapon
     [Header("VR控制器")]
     private XRBaseController leftController;
     private XRBaseController rightController;
-    private XROrigin xrOrigin;  // 使用 XROrigin 而不是 XROriginBase
-    // VR扳机状态跟踪
+    private XROrigin xrOrigin;
     private bool wasLeftTriggerPressed = false;
+    [SerializeField]
+    private InputActionReference pressAAction;  // 序列化字段用于引用PressA动作
 
     private void Awake()
     {
@@ -146,7 +150,7 @@ public class Weapon_AutomaticGun : weapon
         }
         if (rightController == null)
         {
-            Debug.LogWarning("未找到右手控制器！请确保场景中存在XR Origin并且包含Controller组件。");
+            Debug.LogWarning("未找到右手控制器！请确保正确设置。");
         }
     }
 
@@ -187,6 +191,7 @@ public class Weapon_AutomaticGun : weapon
         // 获取VR控制器输入
         bool leftTriggerPressed = false;
         bool rightTriggerPressed = false;
+        bool rightButtonAPressed = false;
         
         if (leftController != null)
         {
@@ -200,10 +205,16 @@ public class Weapon_AutomaticGun : weapon
         if (rightController != null)
         {
             var actionBasedController = rightController.GetComponent<ActionBasedController>();
-            if (actionBasedController != null && actionBasedController.activateAction.action != null)
+            if (actionBasedController != null)
             {
                 rightTriggerPressed = actionBasedController.activateAction.action.ReadValue<float>() > 0.5f;
             }
+        }
+
+        // 检测A键按压
+        if (pressAAction != null && pressAAction.action != null)
+        {
+            rightButtonAPressed = pressAAction.action.WasPressedThisFrame();
         }
 
         //自动枪械VR输入方式
@@ -301,9 +312,12 @@ public class Weapon_AutomaticGun : weapon
             isReloading = false;
         }
 
-
-        if(Input.GetKeyDown(reloadInputName)&&currentBullets < bulletMag&&bulletLeft > 0 && !isReloading){
-            // Reload();
+        // 修改换弹触发逻辑
+        if((rightButtonAPressed || Input.GetKeyDown(reloadInputName)) 
+            && currentBullets < bulletMag 
+            && bulletLeft > 0 
+            && !isReloading)
+        {
             DoReloadAnimation();
         }
 
