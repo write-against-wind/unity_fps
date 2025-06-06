@@ -7546,9 +7546,9 @@ MonoBehaviour:
   m_StartingMultipleGrabTransformers: []
   m_AddDefaultGrabTransformers: 1
   hideHandOnGrab: 1
-  grabOffset: {x: 0, y: 0, z: 0.05}
-  autoAdjustGrabPoint: 1
-  grabDistanceMultiplier: 0.7
+  grabOffset: {x: 0, y: 0, z: 1}
+  autoAdjustGrabPoint: 0
+  grabDistanceMultiplier: 0.1
   grabMaterial: {fileID: 0}
   normalMaterial: {fileID: 0}
   hoverMaterial: {fileID: 0}
@@ -17071,7 +17071,7 @@ MonoBehaviour:
   m_EnableUIInteraction: 1
   m_BlockUIOnInteractableSelection: 1
   m_AllowAnchorControl: 1
-  m_UseForceGrab: 0
+  m_UseForceGrab: 1
   m_RotateSpeed: 180
   m_TranslateSpeed: 1
   m_AnchorRotateReferenceFrame: {fileID: 0}
