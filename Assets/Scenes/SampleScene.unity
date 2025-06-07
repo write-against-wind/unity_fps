@@ -343,6 +343,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Baseball_Bat_4
       objectReference: {fileID: 0}
+    - target: {fileID: 1076663872419906, guid: c52a2831e2813ef45b027ab800712b04, type: 3}
+      propertyPath: m_TagString
+      value: Bullect
+      objectReference: {fileID: 0}
     - target: {fileID: 4504649564949870, guid: c52a2831e2813ef45b027ab800712b04, type: 3}
       propertyPath: m_LocalScale.x
       value: 3
@@ -411,6 +415,14 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 814863379}
+    - targetCorrespondingSourceObject: {fileID: 1076663872419906, guid: c52a2831e2813ef45b027ab800712b04,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 814863380}
+    - targetCorrespondingSourceObject: {fileID: 1076663872419906, guid: c52a2831e2813ef45b027ab800712b04,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 814863384}
   m_SourcePrefab: {fileID: 100100000, guid: c52a2831e2813ef45b027ab800712b04, type: 3}
 --- !u!1 &30661671
 GameObject:
@@ -10095,7 +10107,7 @@ BoxCollider:
   m_ProvidesContacts: 1
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 2.23, y: 2, z: 3.2}
+  m_Size: {x: 4, y: 2, z: 4}
   m_Center: {x: -0.009541188, y: 0.77871233, z: -0.0062954845}
 --- !u!1 &730769970
 GameObject:
@@ -10938,6 +10950,52 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.08744286, y: 0.61427325, z: 0.08744284}
   m_Center: {x: 0.00000002235175, y: 0.20192637, z: -0.0000017955899}
+--- !u!114 &814863380
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 814863372}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19a8cc23fc022794eac9675e2c47907a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  minDamage: 20
+  maxDamage: 40
+  minSwingVelocity: 2
+  damageCooldown: 0.8
+  hitEnemySound: {fileID: 8300000, guid: 8befa3407f2e211458adc2d2fdc36e7c, type: 3}
+  hitObjectSound: {fileID: 8300000, guid: 89b4957f2e6ee4740adfdccd422b9262, type: 3}
+  hitEffect: {fileID: 0}
+--- !u!114 &814863384
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 814863372}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 603be5527fd42e94ab9dade2bf85bf22, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  minDamage: 20
+  maxDamage: 40
+  minSwingVelocity: 2
+  damageCooldown: 0.8
+  hitEnemySound: {fileID: 8300000, guid: 89b4957f2e6ee4740adfdccd422b9262, type: 3}
+  hitObjectSound: {fileID: 8300000, guid: 89b4957f2e6ee4740adfdccd422b9262, type: 3}
+  hitEffect: {fileID: 0}
+  triggerCollider: {fileID: 0}
+  autoCreateTriggerCollider: 1
+  swingCooldownTime: 0.3
+  minAngularVelocity: 90
+  angularAccelerationThreshold: 50
+  positionVelocityThreshold: 1.5
+  enableDistanceCheck: 1
+  approachVelocityThreshold: 0.5
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -16485,7 +16543,7 @@ PrefabInstance:
     - target: {fileID: 6598815579406187037, guid: 18ddb545287c546e19cc77dc9fbb2189,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -32156,7 +32214,7 @@ MonoBehaviour:
   attackState: {fileID: 0}
   attackList: []
   attackRate: 2
-  attackRange: 5
+  attackRange: 10
   attackParticle01: {fileID: 0}
   attackParticle01Postion: {fileID: 0}
   attackSound: {fileID: 8300000, guid: 7d3148bbc9fee0744a74442613de2ac5, type: 3}
@@ -93880,8 +93938,8 @@ CapsuleCollider:
   m_ProvidesContacts: 1
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 3
-  m_Height: 3
+  m_Radius: 1
+  m_Height: 3.5
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &6232745471350276019
