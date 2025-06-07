@@ -71,6 +71,8 @@ public class Enemy : MonoBehaviour
         }
         else{
             targetPosition = Vector3.MoveTowards(transform.position,attackList[0].position,agent.speed*Time.deltaTime);
+            // 更新targetPoint为当前攻击目标
+            targetPoint = attackList[0];
         }
         agent.destination = targetPosition;
     }
@@ -99,24 +101,43 @@ public class Enemy : MonoBehaviour
     }
     public void AttackAction(){
         if(isDead) return;
-        //当敌人和玩家距离很近的时候，触发攻击动画
-        if (Vector3.Distance(transform.position,targetPoint.position)<attackRange){
-            if(Time.time>nextAttack){
-                //触发攻击
-                animator.SetTrigger("attack");
-                //更新下次攻击时间
-                nextAttack=Time.time + attackRate;
+        
+        // 确保有攻击目标
+        if(attackList.Count > 0 && attackList[0] != null){
+            // 使用攻击列表中的第一个目标
+            Transform currentTarget = attackList[0];
+            targetPoint = currentTarget; // 更新targetPoint
+            
+            // 让敌人面向玩家
+            Vector3 directionToPlayer = (currentTarget.position - transform.position).normalized;
+            directionToPlayer.y = 0; // 只在水平面上旋转
+            if(directionToPlayer != Vector3.zero){
+                transform.rotation = Quaternion.LookRotation(directionToPlayer);
+            }
+            
+            //当敌人和玩家距离很近的时候，触发攻击动画
+            if (Vector3.Distance(transform.position, currentTarget.position) < attackRange){
+                if(Time.time > nextAttack){
+                    //触发攻击
+                    animator.SetTrigger("attack");
+                    //更新下次攻击时间
+                    nextAttack = Time.time + attackRate;
+                    
+                    Debug.Log($"敌人 {gameObject.name} 攻击玩家！距离: {Vector3.Distance(transform.position, currentTarget.position):F2}");
+                }
             }
         }
     }
     public void OnTriggerEnter(Collider other){
         if(!attackList.Contains(other.transform)&&!isDead &&!other.CompareTag("Bullect")){
             attackList.Add(other.transform);
+            Debug.Log($"敌人 {gameObject.name} 检测到目标: {other.name}");
         }
     }
     public void OnTriggerExit(Collider other){
         if(attackList.Contains(other.transform)){
             attackList.Remove(other.transform);
+            Debug.Log($"敌人 {gameObject.name} 失去目标: {other.name}");
         }
     }
 }
