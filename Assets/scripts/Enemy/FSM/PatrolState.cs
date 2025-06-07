@@ -33,7 +33,7 @@ public class PatrolState : EnemyBaseState
             if(Vector3.Distance(enemy.transform.position,enemy.wayPoints[enemy.wayPoints.Count -1])<=0.5f){
                 enemy.index=0;
             }
-            Debug.Log("到达路径点，下一个索引: " + enemy.index);
+            // Debug.Log("到达路径点，下一个索引: " + enemy.index);
         }
         if(enemy.attackList.Count>0){
             enemy.TransitionToState(enemy.attackState);

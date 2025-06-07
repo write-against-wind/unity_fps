@@ -406,6 +406,15 @@ public class Weapon_AutomaticGun : weapon
             RaycastHit hit;
             Vector3 shootDirection = shootPoint.forward;//射击向前方射击
             shootDirection = shootDirection + shootPoint.TransformDirection(new Vector3(Random.Range(-SpreadFactor,SpreadFactor),Random.Range(-SpreadFactor,SpreadFactor)));
+            
+            // 添加射线可视化，红色线条持续2秒
+            GameObject lineObj = new GameObject("DebugLine");
+            LineRenderer lineRenderer = lineObj.AddComponent<LineRenderer>();
+            lineRenderer.startWidth = 0.1f;
+            lineRenderer.endWidth = 0.1f;
+            lineRenderer.SetPosition(0, shootPoint.position);
+            lineRenderer.SetPosition(1, shootPoint.position + shootDirection * range);
+            
             if (Physics.Raycast(shootPoint.position,shootDirection,out hit,range))
             {
                 Transform bullet;

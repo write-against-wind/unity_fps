@@ -89,6 +89,7 @@ public class Enemy : MonoBehaviour
         if (isDead) return;
         getDamageText.text=Mathf.Round(damage).ToString();
         enemyHealth -= damage;
+        Debug.Log("enemyHealth: " + enemyHealth);
         slider.value = enemyHealth;
         if (slider.value<=0){
             isDead = true;

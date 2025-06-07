@@ -9517,7 +9517,7 @@ Transform:
   m_GameObject: {fileID: 1478979366}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -1.36144, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -15098,14 +15098,7 @@ MonoBehaviour:
   m_RequiresDepthTextureOption: 2
   m_RequiresOpaqueTextureOption: 2
   m_CameraType: 0
-  m_Cameras:
-  - {fileID: 292011732}
-  - {fileID: 525573391}
-  - {fileID: 567525692}
-  - {fileID: 686520088}
-  - {fileID: 1610795013}
-  - {fileID: 1842212784}
-  - {fileID: 6879436946216701791}
+  m_Cameras: []
   m_RendererIndex: -1
   m_VolumeLayerMask:
     serializedVersion: 2
@@ -16800,7 +16793,7 @@ MonoBehaviour:
   m_System: {fileID: 1589979490282198667}
   m_MoveSpeed: 10
   m_EnableStrafe: 1
-  m_EnableFly: 0
+  m_EnableFly: 1
   m_UseGravity: 1
   m_GravityApplicationMode: 0
   m_ForwardSource: {fileID: 0}
@@ -18925,6 +18918,7 @@ GameObject:
   - component: {fileID: 6232745471350276018}
   - component: {fileID: 6232745471350276017}
   - component: {fileID: 6232745471350276016}
+  - component: {fileID: 6232745471350276019}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -28217,8 +28211,8 @@ MonoBehaviour:
   currentBullets: 0
   bulletLeft: 0
   isSilencer: 0
-  minDamage: 0
-  maxDamage: 0
+  minDamage: 20
+  maxDamage: 25
   lookWeaponKey: 105
   reloadInputName: 114
   GunShootModelInput: 120
@@ -33711,6 +33705,28 @@ CapsuleCollider:
   m_Height: 3
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &6232745471350276019
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1717954560555269401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1ea8295768a9a045a90583c43529abe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerCharacter: {fileID: 1478979367}
+  syncYRotation: 1
+  syncXRotation: 1
+  syncZRotation: 0
+  useSmoothing: 1
+  rotationSmoothSpeed: 5
+  limitXRotation: 1
+  minXRotation: -30
+  maxXRotation: 30
+  rotationOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &6236260141364416062
 Transform:
   m_ObjectHideFlags: 0
